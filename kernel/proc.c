@@ -127,6 +127,8 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  p->syscall_trace = 0; //初始化系统调用掩码
+
   return p;
 }
 
@@ -291,11 +293,16 @@ fork(void)
 
   safestrcpy(np->name, p->name, sizeof(p->name));
 
+  np -> syscall_trace = p ->syscall_trace;// 子进程复制父进程系统调用掩码
+
   pid = np->pid;
 
   np->state = RUNNABLE;
 
   release(&np->lock);
+
+  
+
 
   return pid;
 }
