@@ -7,6 +7,8 @@
 #include "spinlock.h"
 #include "proc.h"
 
+#include "sysinfo.h"  //here
+
 uint64
 sys_exit(void)
 {
@@ -111,3 +113,14 @@ sys_trace(void)
     return 0;
     
 }
+uint64
+sys_sysinfo(void){
+    struct sysinfo info;
+    
+    
+
+
+
+}
+
+
