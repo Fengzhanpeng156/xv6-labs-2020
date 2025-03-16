@@ -80,3 +80,22 @@ kalloc(void)
     memset((char*)r, 5, PGSIZE); // fill with junk
   return (void*)r;
 }
+
+
+uint64
+count_free_mem(void){
+    acquire(&kmem.lock);                    // 加锁，保证多核情况下访问安全
+
+    uint64 mem_bytes = 0;
+    struct run*r = kmem.freelist;         // 获取空闲内存链表的头节点
+    while (r)
+    {
+        mem_bytes += PGSIZE;                // 每个节点表示一个空闲页面，累加页面大小（PGSIZE）
+        r = r->next;                         // 遍历链表
+        /* code */
+    }
+    release (&kmem.lock);
+    return mem_bytes;
+    
+
+}

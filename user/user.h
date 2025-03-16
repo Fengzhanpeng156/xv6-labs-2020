@@ -27,7 +27,7 @@ int sleep(int);
 int uptime(void);
 int trace(int); ///用户态系统调用入口函数
 
-int sysinfo(struct sysinfo*);
+int sysinfo(struct sysinfo*); //here lab2 work2
 
 // ulib.c
 int stat(const char*, struct stat*);

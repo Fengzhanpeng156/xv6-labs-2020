@@ -7,7 +7,7 @@
 #include "spinlock.h"
 #include "proc.h"
 
-#include "sysinfo.h"  //here
+#include "sysinfo.h"  //here lab2 work2
 
 uint64
 sys_exit(void)
@@ -116,10 +116,17 @@ sys_trace(void)
 uint64
 sys_sysinfo(void){
     struct sysinfo info;
-    
-    
+    info.freemem = count_free_mem(); // kalloc.c
+    info.nproc = count_process(); // proc.c
 
+    uint64 dstaddr;
+    argaddr(0, &dstaddr);
 
+    if(copyout(myproc()->pagetable,dstaddr,(char*)&info,sizeof (info)) < 0){
+        return -1;
+
+    }
+    return 0;
 
 }
 
