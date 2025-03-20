@@ -34,12 +34,12 @@ procinit(void)
       // Allocate a page for the process's kernel stack.
       // Map it high in memory, followed by an invalid
       // guard page.
-      char *pa = kalloc();
-      if(pa == 0)
-        panic("kalloc");
-      uint64 va = KSTACK((int) (p - proc));
-      kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
-      p->kstack = va;
+    //    char *pa = kalloc();
+    //    if(pa == 0)
+    //      panic("kalloc");
+    //    uint64 va = KSTACK((int) (p - proc));
+    //    kvmmap(va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+    //    p->kstack = va;
   }
   kvminithart();
 }
@@ -121,6 +121,18 @@ found:
     return 0;
   }
 
+  //为新进程创建独立的内核页表，将内核映射添加到新页表
+  p->kernelpgtbl = kvminit_newpgtbl();
+
+  //分配物理页，作为新进程的内核栈使用
+  char *pa = kalloc();
+  if(pa == 0)
+    panic("kalloc");
+  uint64 va = KSTACK((int) (0));            // 将内核栈映射到固定的逻辑地址上
+  kvmmap(p->kernelpgtbl, va, (uint64)pa, PGSIZE, PTE_R | PTE_W);
+  p->kstack = va;// 记录内核栈的逻辑地址，其实已经是固定的了，依然这样记录是为了避免需要修改其他部分 xv6 代码
+
+
   // Set up new context to start executing at forkret,
   // which returns to user space.
   memset(&p->context, 0, sizeof(p->context));
@@ -149,6 +161,15 @@ freeproc(struct proc *p)
   p->chan = 0;
   p->killed = 0;
   p->xstate = 0;
+  //释放进程内核栈
+  void *kstack_pa = (void*)kvmpa(p->kernelpgtbl,p->kstack);
+  kfree(kstack_pa);
+  p->kstack = 0;
+
+  kvm_free_kernelpgtbl(p->kernelpgtbl);
+  p->kernelpgtbl = 0;
+
+
   p->state = UNUSED;
 }
 
@@ -473,7 +494,14 @@ scheduler(void)
         // before jumping back to us.
         p->state = RUNNING;
         c->proc = p;
+        w_satp(MAKE_SATP(p->kernelpgtbl)); //加载内核页表到SATP寄存器
+        sfence_vma();                       //刷新TLB缓存
+
+        //调度执行进程
         swtch(&c->context, &p->context);
+
+        //切换回全局内核页表
+        kvminithart();
 
         // Process is done running for now.
         // It should have changed its p->state before coming back.
